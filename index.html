@@ -1,5 +1,4 @@
-```html
-<!DOCTYPE html>
+⁷<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -589,6 +588,100 @@
             } catch (e) {
                 console.error("Firebase init failed:", e);
             }
+        }
+
+        // --- [수정] 누락되었던 필수 전역 상태 변수 선언 ---
+        let balance = 10000000;
+        let selectedChip = 100000;
+        let bets = { player: 0, tie: 0, banker: 0, player_bonus: 0, banker_bonus: 0 };
+        let gamePhase = "WAITING_FOR_BETS";
+        let timeLeft = 10;
+        let countdownTimer = null;
+        let history = [];
+
+        // --- [수정] 졸라맨 팔 애니메이션 좌표 누락 오류 대응 ---
+        const dealerArmPaths = {
+            idleLeft: "M 100,60 L 70,75 L 55,85",
+            idleRight: "M 100,60 L 130,75 L 145,85",
+            dealLeft: "M 100,60 L 60,50 L 45,40",
+            dealRight: "M 100,60 L 140,50 L 155,40",
+            cheerLeft: "M 100,60 L 75,45 L 60,30",
+            cheerRight: "M 100,60 L 125,45 L 140,30",
+            sadLeft: "M 100,60 L 80,80 L 70,95",
+            sadRight: "M 100,60 L 120,80 L 130,95"
+        };
+
+        // --- [수정] 자산 무료 충전 함수 추가 ---
+        function chargeAsset() {
+            if (typeof sounds !== 'undefined' && sounds.click) sounds.click();
+            balance += 5000000; // 500만 원 무료 충전
+            updateUI();
+            showToast("💸 무료 충전 ₩5,000,000이 완료되었습니다!");
+            saveBalanceToCloud();
+        }
+
+        // --- [수정] UI 갱신 함수 추가 및 안전성 조치 ---
+        function updateUI() {
+            const balText = document.getElementById('balanceText');
+            if (balText) {
+                balText.innerText = `₩${balance.toLocaleString()}`;
+            }
+            
+            const totalBet = bets.player + bets.tie + bets.banker + bets.player_bonus + bets.banker_bonus;
+            const totalBetText = document.getElementById('totalBetText');
+            if (totalBetText) {
+                totalBetText.innerText = `₩${totalBet.toLocaleString()}`;
+            }
+
+            // 구역별 베팅 배지 가시화 제어
+            const betTypes = ['player', 'tie', 'banker', 'player_bonus', 'banker_bonus'];
+            betTypes.forEach(type => {
+                const badge = document.getElementById(`betBadge-${type}`);
+                if (badge) {
+                    if (bets[type] > 0) {
+                        badge.innerText = `₩${bets[type].toLocaleString()}`;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        // --- [수정] 저장 상태 UI 갱신 헬퍼 함수 ---
+        function setSaveStatus(status, label) {
+            const icon = document.getElementById('saveStatusIcon');
+            const text = document.getElementById('saveStatusText');
+            if (!icon || !text) return;
+
+            if (status === 'success') {
+                icon.innerHTML = `<i class="fa-solid fa-cloud-sun text-emerald-400"></i>`;
+                text.innerText = "안전 보관됨";
+            } else if (status === 'saving') {
+                icon.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-yellow-400"></i>`;
+                text.innerText = "동기화 중";
+            } else {
+                icon.innerHTML = `<i class="fa-solid fa-cloud-sun text-red-400"></i>`;
+                text.innerText = label || "로컬 플레이";
+            }
+        }
+
+        // --- [수정] 상태 피드백 출력 헬퍼 함수 ---
+        function showStatusFeedback(message, type) {
+            const statusEl = document.getElementById('gameStatusMessage');
+            if (statusEl) {
+                statusEl.innerText = message;
+            }
+        }
+
+        // --- [수정] 자산 가치 포맷팅 헬퍼 함수 ---
+        function formatMoney(n) {
+            return `₩${n.toLocaleString()}`;
+        }
+
+        // --- [수정] 비동기 딜레이(대기) 유틸 함수 ---
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
         }
 
         // --- 커스텀 토스트 노티파이어 ---
@@ -1705,5 +1798,3 @@
     </script>
 </body>
 </html>
-
-```
